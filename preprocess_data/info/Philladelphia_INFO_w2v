@@ -1,0 +1,3 @@
+SAVE FOLDER： ../dataset/.data/Philladelphi_data_word2vec
+Warning: the word embedding file is not provided, will be initialized randomly
+2024-02-21 00:03:25: Step1: loading raw review datasets...
