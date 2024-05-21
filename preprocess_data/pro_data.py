@@ -105,20 +105,22 @@ if __name__ == "__main__":
 
 
     # BERT SENTENCES LOADING 
+    '''
     zeroshot_sentences = np.load(f"../ZeroShot/{zeroshot_path}")
     zeroshot_sentences = np.array([zeroshot_sentences[i] for i in range(len(zeroshot_sentences)) if i not in unknown])
 
     finetunning_sentences = np.load(f"../FineTunning/{finetunning_path}")
     finetunning_sentences = np.array([finetunning_sentences[i] for i in range(len(finetunning_sentences)) if i not in unknown])
-
+    '''
     # DATASET LOADED AND CREATED AS PANDAS DATAFRAME
     data_frame = {'user_id': pd.Series(users_id), 'item_id': pd.Series(items_id),
                   'ratings': pd.Series(ratings), 'reviews': pd.Series(reviews), 
-                  'zeroshot': pd.Series([zeroshot_sentences[i] for i in range(zeroshot_sentences.shape[0])]),
-                  'finetunning': pd.Series([finetunning_sentences[i] for i in range(finetunning_sentences.shape[0])])}
+                  #'zeroshot': pd.Series([zeroshot_sentences[i] for i in range(zeroshot_sentences.shape[0])]),
+                  #'finetunning': pd.Series([finetunning_sentences[i] for i in range(finetunning_sentences.shape[0])])
+                }
     data = pd.DataFrame(data_frame)
     
-    del users_id, items_id, ratings, reviews, zeroshot_sentences, finetunning_sentences # CLEANNING MEMORY TRASH ;)
+    del users_id, items_id, ratings, reviews, # zeroshot_sentences, finetunning_sentences # CLEANNING MEMORY TRASH ;)
 
 
     # SOME INFORMATIONS
@@ -276,6 +278,7 @@ if __name__ == "__main__":
             item_reviews_dict[i[1]] = [str_review]
             item_uid_dict[i[1]] = [i[0]]
 
+        '''
         zero_review = i[4]
 
         if i[0] in user_zero_dict:
@@ -300,7 +303,7 @@ if __name__ == "__main__":
         else:
             item_fine_dict[i[1]] = [fine_review]
 
-
+        '''
     # BUILDING USER/ITEM DOCUMENTS FROM REVIEWS
     vocab, user_review2doc, item_review2doc, user_reviews_dict, item_reviews_dict, topics = build_doc(user_reviews_dict, item_reviews_dict)
     
@@ -333,7 +336,7 @@ if __name__ == "__main__":
 
     maxSentLen = max(u_pSentLen, i_pSentLen)
     minSentlen = 1
-
+    '''
     user_zero_dict, item_zero_dict, user_zero2doc, item_zero2doc = build_bert_doc(user_zero_dict, item_zero_dict, u_pReviewLen, i_pReviewLen)
     user_fine_dict, item_fine_dict, user_fine2doc, item_fine2doc = build_bert_doc(user_fine_dict, item_fine_dict, u_pReviewLen, i_pReviewLen)
 
@@ -352,7 +355,7 @@ if __name__ == "__main__":
     print(f"User Doc Shape: {np.array(user_fine2doc).shape}")
     print(f"Item Doc Shape: {np.array(item_fine2doc).shape}")
     print("############################")
-
+    '''
     print(f"-"*60)
     print(f"{now()} Step4: padding all the text and id lists and save into npy.")
 
@@ -430,6 +433,7 @@ if __name__ == "__main__":
 
     print("-"*60)
     print(f"{now()} start writing npy...")
+    '''
     np.save(f"{save_folder}/train/userZeroReviews.npy", user_zero_dict)
     np.save(f"{save_folder}/train/itemZeroReviews.npy", item_zero_dict)
     np.save(f"{save_folder}/train/userZeroDoc.npy", user_zero2doc)
@@ -439,7 +443,7 @@ if __name__ == "__main__":
     np.save(f"{save_folder}/train/itemFineReviews.npy", item_fine_dict)
     np.save(f"{save_folder}/train/userFineDoc.npy", user_fine2doc)
     np.save(f"{save_folder}/train/itemFineDoc.npy", item_fine2doc)
-
+    '''
     np.save(f"{save_folder}/train/userReview2Index.npy", userReview2Index)
     np.save(f"{save_folder}/train/user_item2id.npy", user_iid_list)
     np.save(f"{save_folder}/train/userDoc2Index.npy", userDoc2Index)

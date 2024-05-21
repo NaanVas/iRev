@@ -1,3 +1,50 @@
 SAVE FOLDER： ../dataset/.data/Philladelphi_data_word2vec
 Warning: the word embedding file is not provided, will be initialized randomly
-2024-02-21 00:03:25: Step1: loading raw review datasets...
+2024-05-20 15:17:31: Step1: loading raw review datasets...
+===============Start:all  rawData size======================
+dataNum: 605122
+userNum: 37666
+itemNum: 14344
+data densiy: 0.0011
+===============End: rawData size========================
+------------------------------------------------------------
+2024-05-20 16:45:18 Step2: split datsets into train/val/test, save into npy data
+===============Start: no-preprocess: trainData size======================
+dataNum: 484097
+userNum: 37663
+itemNum: 14228
+===============End: no-preprocess: trainData size========================
+===============Start--process finished: trainData size======================
+dataNum: 484261
+userNum (config): 37666
+itemNum (config): 14344
+===============End-process finished: trainData size========================
+2024-05-20 16:45:38
+Train data size (config): 484261
+Val data size (config): 60431
+Test data size (config): 60430
+------------------------------------------------------------
+2024-05-20 16:45:38 Step3: Construct the vocab and user/item reviews from training set.
+LDA transform matrix: (52010, 32)
+The vocab size: 50002
+Average user document length: 280.5756385068762
+Average item document length: 324.2051728945901
+2024-05-20 17:22:18
+u_max_r:17
+i_max_r:51
+r_max_len：63
+------------------------------------------------------------
+2024-05-20 17:24:13 Step4: padding all the text and id lists and save into npy.
+user document length: 500
+item document length: 500
+------------------------------------------------------------
+2024-05-20 17:25:03 start writing npy...
+2024-05-20 17:25:14 write finised
+------------------------------------------------------------
+2024-05-20 17:25:14 Step5: start word embedding mapping...
+############################
+out of vocab: 11100
+w2v size: 50002
+############################
+Vocab Size and Word Dim: (50002, 300)
+2024-05-20 17:26:07 all steps finised, cost time: 7716.1728s

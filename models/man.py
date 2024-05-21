@@ -57,7 +57,9 @@ class MAN(nn.Module):
             MultiRepresentationAttention
             Eq 4 - 8
         '''
-        euclidean = (user_tcn - item_tcn.permute(0, 1, 3, 2)).pow(2).sum(1).sqrt()
+        #euclidean = (user_tcn - item_tcn.permute(0, 1, 3, 2)).pow(2).sum(1).sqrt()
+        euclidean = (user_tcn - item_tcn).pow(2).sum(1).sqrt()
+
         attention_matrix = 1.0 / (1 + euclidean)
         attention_matrix = torch.softmax(torch.sum(attention_matrix, 2), dim=1)
         u_review_level = user_reviews * attention_matrix.unsqueeze(2)
@@ -129,7 +131,7 @@ class TemporalConvolutionNetwork(nn.Module):
 
         # kernels = [2,3,4]
 
-        self.conv1 = nn.Conv2d(1, opt.filters_num, (opt.kernel_size, opt.word_dim))
+        self.conv1 = nn.Conv2d(1, opt.filters_num, (opt.kernel_size, opt.word_dim), padding="same")
         # self.conv2 = nn.Conv2d(opt.filters_num, opt.filters_num, (opt.kernel_size, opt.word_dim))
         # if uori == 'user':
         #     self.conv3 = nn.Conv2d(opt.filters_num, opt.filters_num, (opt.kernel_size, opt.word_dim))

@@ -1,37 +1,50 @@
 SAVE FOLDER： ../dataset/.data/Tamp_data_word2vec
 Warning: the word embedding file is not provided, will be initialized randomly
-2024-02-20 23:31:01: Step1: loading raw review datasets...
+2024-05-21 13:06:58: Step1: loading raw review datasets...
 ===============Start:all  rawData size======================
-dataNum: 454889
-userNum: 165718
-itemNum: 9050
-data densiy: 0.0003
+dataNum: 241257
+userNum: 16528
+itemNum: 8761
+data densiy: 0.0017
 ===============End: rawData size========================
 ------------------------------------------------------------
-2024-02-20 23:40:37 Step2: split datsets into train/val/test, save into npy data
+2024-05-21 13:07:00 Step2: split datsets into train/val/test, save into npy data
 ===============Start: no-preprocess: trainData size======================
-dataNum: 363911
-userNum: 143425
-itemNum: 9050
+dataNum: 193005
+userNum: 16525
+itemNum: 8625
 ===============End: no-preprocess: trainData size========================
 ===============Start--process finished: trainData size======================
-dataNum: 387481
-userNum (config): 165718
-itemNum (config): 9050
+dataNum: 193208
+userNum (config): 16528
+itemNum (config): 8761
 ===============End-process finished: trainData size========================
-2024-02-20 23:40:43
-Train data size (config): 387481
-Val data size (config): 33704
-Test data size (config): 33704
+2024-05-21 13:07:07
+Train data size (config): 193208
+Val data size (config): 24025
+Test data size (config): 24025
 ------------------------------------------------------------
-2024-02-20 23:40:43 Step3: Construct the vocab and user/item reviews from training set.
-LDA transform matrix: (174768, 32)
+2024-05-21 13:07:07 Step3: Construct the vocab and user/item reviews from training set.
+LDA transform matrix: (25289, 32)
 The vocab size: 50002
-Average user document length: 97.5348664598897
-Average item document length: 432.41226519337016
-2024-02-20 23:48:34
-u_max_r:3
-i_max_r:64
-r_max_len：91
+Average user document length: 271.45607454017426
+Average item document length: 286.54137655518775
+2024-05-21 13:24:01
+u_max_r:15
+i_max_r:33
+r_max_len：65
+------------------------------------------------------------
+2024-05-21 13:24:02 Step4: padding all the text and id lists and save into npy.
+user document length: 500
+item document length: 500
+------------------------------------------------------------
+2024-05-21 13:24:16 start writing npy...
+2024-05-21 13:24:22 write finised
+------------------------------------------------------------
+2024-05-21 13:24:22 Step5: start word embedding mapping...
 ############################
-BERT Zeroshot Config:
+out of vocab: 13548
+w2v size: 50002
+############################
+Vocab Size and Word Dim: (50002, 300)
+2024-05-21 13:25:12 all steps finised, cost time: 1093.7324s
