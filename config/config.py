@@ -350,17 +350,17 @@ class Tamp_data_Config(DefaultConfig):
         
     vocab_size = 50002
     
-    r_max_len = 91
+    r_max_len = 63
 
-    u_max_r = 3
-    i_max_r = 64
+    u_max_r = 19
+    i_max_r = 31
 
-    train_data_size = 387481
-    test_data_size = 33704
-    val_data_size = 33704
+    train_data_size = 178728
+    test_data_size = 22200
+    val_data_size = 22199
 
-    user_num = 165718 + 2
-    item_num = 9050 + 2
+    user_num = 12902 + 2
+    item_num = 8676 + 2
 
 
 class Tucso_data_Config(DefaultConfig):
@@ -370,17 +370,17 @@ class Tucso_data_Config(DefaultConfig):
         
     vocab_size = 50002
     
-    r_max_len = 93
+    r_max_len = 63
 
-    u_max_r = 3
-    i_max_r = 56
+    u_max_r = 20
+    i_max_r = 31
 
-    train_data_size = 339986
-    test_data_size = 32447
-    val_data_size = 32447
+    train_data_size = 184247
+    test_data_size = 22911
+    val_data_size = 22912
 
-    user_num = 121312 + 2
-    item_num = 9250 + 2
+    user_num = 13004 + 2
+    item_num = 9069 + 2
 
 
 class Philladelphi_data_Config(DefaultConfig):
