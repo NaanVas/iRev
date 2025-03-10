@@ -4,7 +4,6 @@ import random
 import math
 import fire
 import os
-import json
 
 import numpy as np
 import pandas as pd
@@ -252,17 +251,6 @@ def test(**kwargs):
     predict_loss, test_mse, test_mae, test_prediction = predict(model, test_data_loader, opt)
 
 
-class NumpyEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, np.integer):
-            return int(obj)
-        if isinstance(obj, np.floating):
-            return float(obj)
-        if isinstance(obj, np.ndarray):
-            return obj.tolist()
-        return super().default(obj)
-
-
 # @PREDICT OUTPUT FUNCTION
 def predict(model, data_loader, opt):
     total_loss = 0.0
@@ -277,17 +265,12 @@ def predict(model, data_loader, opt):
     novelty_values = []
     diversity_values = []
 
-    # Novos dicionários para armazenar os dados
-    batches_dict = {}
-    recommendations_dict = {}
-    debug_dict = {}
-
     # MODEL IN EVALUTATION STAGE
     model.eval()
 
     # WITHOUT GRADIENT
     with torch.no_grad():
-        for batch_idx, (test_data, scores) in enumerate(data_loader):
+        for idx, (test_data, scores) in enumerate(data_loader):
             if opt.use_gpu:
                 scores = torch.FloatTensor(scores).cuda()
             else:
@@ -295,38 +278,11 @@ def predict(model, data_loader, opt):
 
             test_data = unpack_input(opt, test_data)
 
-            # Converte os dados de test_data para um formato serializável
-            # Se test_data for uma lista ou tupla de tensores, percorra cada um convertendo para lista
-            test_data_serialized = []
-            for data in test_data:
-                if torch.is_tensor(data):
-                    # Use .cpu() caso o tensor esteja na GPU e converta para lista
-                    test_data_serialized.append(data.cpu().numpy().tolist())
-                else:
-                    test_data_serialized.append(data)
-
-            # Converte scores para lista
-            scores_serialized = scores.cpu().numpy().tolist()
-
-            # Executa o modelo e captura o output
             if opt.transnet:
                 output, _ = model(test_data)
                 output = output[1]
             else:
                 output = model(test_data)
-                print("Output shape:", output.shape)
-                print("Output values:", output)
-
-            # Converte o output para um formato serializável
-            output_serialized = output.cpu().detach().numpy().tolist()
-
-            # Armazena as informações do batch atual
-            debug_dict[f'batch_{batch_idx}'] = {
-                "test_data": test_data_serialized,
-                "scores": scores_serialized,
-                "output": output_serialized
-            }
-
 
             mse_loss = torch.mean((output-scores)**2)
             total_loss += mse_loss.item()
@@ -345,85 +301,63 @@ def predict(model, data_loader, opt):
             recall_values.append(recall.item())
             novelty_values.append(novel)
             diversity_values.append(diver)
-    with open("debug_output.json", "w") as f:
-        json.dump(debug_dict, f, indent=4)
 
     if opt.ranking_metrics:
-        interactions, scores = next(iter(data_loader))
+        iteractions, scores = next(iter(data_loader))
         
-        user_ids = set([x[0] for x in interactions])
-        item_ids = set([x[1] for x in interactions])
-        
-        # Dicionário para armazenar para quais itens foram geradas as predições
-        predictions_items_dict = {}
+        user_ids = set([x[0] for x in iteractions])
+        item_ids = set([x[1] for x in iteractions])
 
         with torch.no_grad():
             for user in user_ids:
-                # Obtém dados iniciais para extrair os itens candidatos
-                #test_data = unpack_input(opt, zip([user], [0]))
-                test_data = unpack_input(opt, zip([user]*len(item_ids), item_ids))
-                user_items = test_data[4].cpu().tolist()[0]
-                n_id_items = opt.item_num - 1
-                user_items = [x for x in user_items if x < n_id_items]
+                test_data = unpack_input(opt, zip([user], [0]))
+                # test_data = unpack_input(opt, zip([user]*len(item_ids), item_ids))
 
-                # Prepara os dados para os itens candidatos desse usuário
-                test_data = unpack_input(opt, zip([user]*len(user_items), user_items))
+                # Here, I have the itens that my user consume
+                user_itens = test_data[4].cpu().tolist()[0]
 
-                # Gera as predições
+                n_id_itens = opt.item_num - 1
+                user_itens = [x for x in user_itens if x < n_id_itens]
+
+                test_data = unpack_input(opt, zip([user]*len(user_itens), user_itens))
+
                 if opt.transnet:
                     output, _ = model(test_data)
                     output = output[1]
                     if len(output.shape) == 0:
                         break
+
                 else:
                     output = model(test_data)
 
-                output = output.cpu()
-                # Lista de IDs dos itens (candidatos)
-                iids = user_items  
-                # Converte os scores para lista de floats
-                scores_pred = [x.item() for x in output]
 
-                # Cria uma lista de tuplas (item_id, score) e ordena para obter o ranking
-                item_x_rating = list(zip(iids, scores_pred))
-                item_x_rating.sort(key=lambda x: x[1], reverse=True)
+                # iids, output = test_data[3].cpu(), output.cpu()
+                output = output.cpu()
+                # iids = [x.item() for x in iids]
+                iids = user_itens
+                output = [x.item() for x in output]
+
+
+                item_x_rating = list(zip(iids, output))
+                item_x_rating.sort(key=lambda x: x[1])
+
                 list_wise = [x[0] for x in item_x_rating]
 
-                # Armazena as informações de predição para o usuário:
-                predictions_items_dict[str(int(user))] = {
-                    'ground_truth': [int(y[1]) for y in [x for x in interactions if user == x[0]]],
-                    'candidate_items': user_items,           # Todos os itens candidatos para os quais a predição foi gerada
-                    'predicted_scores': scores_pred,           # Scores previstos para cada item (na mesma ordem de candidate_items)
-                    'top_recommendations': list(map(int, list_wise[:10]))  # Top 10 itens recomendados
-                }
+                grownd_truth = [y[1] for y in [x for x in iteractions if user == x[0]]]
 
-            # Salva as informações dos itens preditos em um JSON
-                # ======================================================
-                # Armazena as recomendações para cada usuário
-                recommendations_dict[str(int(user))] = {
-                    'ground_truth': [int(y[1]) for y in [x for x in interactions if user == x[0]]],
-                    'recommendations': list(map(int, list_wise[:10]))  # Top 10 itens
-                }
-                # ======================================================
-
-                grownd_truth = [y[1] for y in [x for x in interactions if user == x[0]]]
                 ndcg = ndcg_metric(grownd_truth, list_wise, nranks=4)
+
                 ndcg_values.append(ndcg)
 
-    with open('predictions_items.json', 'w') as f:
-        json.dump(predictions_items_dict, f, indent=4, cls=NumpyEncoder)
-    # ======================================================
-    # Salva os arquivos JSON
-    with open('batches.json', 'w') as f:
-        json.dump(batches_dict, f, indent=4, cls=NumpyEncoder)
-        
-    with open('recommendations.json', 'w') as f:
-        json.dump(recommendations_dict, f, indent=4, cls=NumpyEncoder)
+    # if opt.diversity_metrics:
+    #     ...
+        # Preciso das categorias dos itens
+        # Preciso de listas de recomendação e listas verdadeiras
+        # Calculo métricas de diversidade
 
-    print('Salvo os json')
-    # ======================================================
-
+    
     if opt.statistical_test:
+
         df_error = {
             "mse":mse_values, 
             "mae":mae_values,
@@ -444,6 +378,7 @@ def predict(model, data_loader, opt):
         df_rank = pd.DataFrame(df_rank)
         df_rank.to_csv(f"results/{opt.model}_{opt.dataset}_{opt.emb_opt}_results_rank.csv", index=False)
 
+
     else:
         print(f'''MSE mean: {np.array(mse_values).mean():.2f},
                 MAE mean: {np.array(mae_values).mean():.2f}, 
@@ -453,14 +388,20 @@ def predict(model, data_loader, opt):
                 RECALL mean: {np.array(recall_values).mean():.2f},
                 NOVELTY mean: {np.array(novelty_values).mean():.2f},
                 DIVERSITY mean: {np.array(diversity_values).mean():.2f}'''
-        )
-    
+                
+            )
+
+            
+
     data_len = len(data_loader.dataset)
     mse = total_loss * 1.0 / data_len
     mae = total_maeloss * 1.0 / data_len
     
+    # RETURN TO TRAIN STAGE
     model.train()
+
     return total_loss, mse, mae, output
+
 
 # @UNPACK INTERACTION FEATURES
 def unpack_input(opt, x):
@@ -482,7 +423,7 @@ def unpack_input(opt, x):
     if opt.topics:
         user_doc = opt.topic_matrix[uids]
 
-        shift = opt.user_num
+        shift = opt.user_num - 2
         item_doc = opt.topic_matrix[[x + shift for x in iids]] 
 
     

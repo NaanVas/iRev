@@ -72,7 +72,9 @@ def test(**kwargs):
     print(f"{now()}: all in the all dataset")
     predict_loss, test_mse, test_mae, all_prediction = predict(model, all_data_loader, opt)
 
-    output_file = 'all_predictions.csv'
+    dataset_name = kwargs.get('dataset', 'default_dataset').replace('_data', '')
+    model_name = kwargs.get('model', 'default_model')
+    output_file = f"{dataset_name}{model_name}.csv"
 
     save_predictions_to_csv(all_prediction, output_file)
 
@@ -281,7 +283,7 @@ def unpack_input(opt, x):
 
 def save_predictions_to_csv(predictions, output_file):
     # Cabeçalho do arquivo CSV
-    header = ['user_id', 'item_id', 'score']
+    header = ['user_id', 'item_id', 'ratings']
 
     # Abrir o arquivo CSV para escrita
     with open(output_file, 'w', newline='') as csvfile:
