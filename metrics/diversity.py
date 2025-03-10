@@ -1,6 +1,9 @@
 import math
+import pandas as pd
+import numpy as np
+from scipy.spatial.distance import squareform, pdist
 
-def diversity(itens, pred_cat):
+def diversity_bkp(itens, pred_cat):
     entropy = []
 
     for item, cat in zip(itens, pred_cat):
@@ -19,3 +22,15 @@ def diversity(itens, pred_cat):
     entropy = math.log2(sum(entropy))
 
     return 1 - (entropy / len(itens))
+
+def diversity(top_recommends: dict, embeddings: np.ndarray, similarity_metric: str = 'cosine') -> float:
+
+    diversity = 0
+    for user, items in top_recommends.items():
+        items_emb = embeddings[list(items.keys())]
+        sim = pdist(items_emb, similarity_metric)
+        user_diversity = 1 - np.mean(sim)
+        diversity += user_diversity
+    
+
+    return diversity / len(top_recommends)
