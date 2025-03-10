@@ -4,6 +4,8 @@ import random
 import math
 import fire
 import os
+import json
+from tqdm import tqdm
 
 import numpy as np
 import pandas as pd
@@ -250,6 +252,67 @@ def test(**kwargs):
     print(f"{now()}: test in the test dataset")
     predict_loss, test_mse, test_mae, test_prediction = predict(model, test_data_loader, opt)
 
+     # --- Cálculo da Diversidade das Recomendações ---
+    path = 'dataset/.data/' + f'{opt.dataset}_{opt.emb_opt}'
+    with open(path + '/train/itemDoc2Index.npy', 'rb') as f:
+        embeddings = np.load(f)
+
+    rank_predictions = {}
+    diversity_list = []
+
+    test_users = set([int(x[0].flatten()[0]) for x in test_data.x])
+    
+    #user = list(test_users)[0]
+    for user in tqdm(test_users, desc="Processando usuários"):
+        candidate_items = list(range(opt.item_num - 2))
+        test_user_data = unpack_input(opt, zip([user] * len(candidate_items), candidate_items))
+        all_predictions = []
+
+        # Processa os itens em batches de tamanho opt.batch_size
+        for i in range(0, len(candidate_items), opt.batch_size):
+            batch_items = candidate_items[i : i + opt.batch_size]
+            test_user_data = unpack_input(opt, zip([user] * len(batch_items), batch_items))
+            
+            if opt.transnet:
+                output, _ = model(test_user_data)
+                output = output[1]
+            else:
+                output = model(test_user_data)
+            
+            batch_predictions = output.cpu().tolist()
+            all_predictions.extend(batch_predictions)
+
+        item_predictions = list(zip(candidate_items, all_predictions))
+        item_predictions = sorted(item_predictions, key=lambda x: x[1], reverse=True)
+
+        top_k = 10  
+        top_k_dict = {item: score for item, score in item_predictions[:top_k]}
+        rank_predictions[user] = top_k_dict
+
+        # Calcula a diversidade média utilizando a função diversity com embeddings
+        #user_diversity = diversity(rank_predictions, embeddings)
+        #diversity_list.append(user_diversity)
+
+    #avg_diversity = np.mean(diversity_list)
+    avg_diversity = diversity(rank_predictions, embeddings)
+    print(f"Diversidade global: {avg_diversity:.2f}")
+    # Cria o dicionário de resultados para salvar no JSON
+    result = {
+        "dataset": opt.dataset,
+        "model": opt.model,
+        "diversity": avg_diversity
+    }
+
+    output_file = "results/diversity_results.json"
+    with open(output_file, "w") as f:
+        json.dump(result, f, indent=4)
+    print(f"Resultados salvos em {output_file}")
+
+    recommendations_file = f"results/{opt.dataset}_{opt.model}_top10_recommendations.json"
+    with open(recommendations_file, "w") as f:
+        json.dump(rank_predictions, f, indent=4)
+    print(f"Top10 recomendações salvas em {recommendations_file}")
+
 
 # @PREDICT OUTPUT FUNCTION
 def predict(model, data_loader, opt):
@@ -292,7 +355,7 @@ def predict(model, data_loader, opt):
 
             rmse, precision, recall = calculate_metrics(scores, output)
             novel = novelty(scores.cpu().tolist(), output.cpu().tolist())
-            diver = diversity(scores.cpu().tolist(), output.cpu().tolist())
+            #diver = diversity(scores.cpu().tolist(), output.cpu().tolist())
 
             mse_values.append(mse_loss.cpu().item())
             rmse_values.append(rmse.item())
@@ -300,7 +363,7 @@ def predict(model, data_loader, opt):
             precision_values.append(precision.item())
             recall_values.append(recall.item())
             novelty_values.append(novel)
-            diversity_values.append(diver)
+            #diversity_values.append(diver)
 
     if opt.ranking_metrics:
         iteractions, scores = next(iter(data_loader))
@@ -364,7 +427,7 @@ def predict(model, data_loader, opt):
             "rmse": rmse_values,
             "precision": precision_values,
             "recall": recall_values,
-            "diversity": diversity_values,
+            #"diversity": diversity_values,
             "novelty": novelty_values,
             }
         
@@ -386,8 +449,8 @@ def predict(model, data_loader, opt):
                 NDCG mean: {np.array(ndcg_values).mean():.5f}, 
                 PRECISION mean: {np.array(precision_values).mean():.2f},
                 RECALL mean: {np.array(recall_values).mean():.2f},
-                NOVELTY mean: {np.array(novelty_values).mean():.2f},
-                DIVERSITY mean: {np.array(diversity_values).mean():.2f}'''
+                NOVELTY mean: {np.array(novelty_values).mean():.2f}'''
+                #DIVERSITY mean: {np.array(diversity_values).mean():.2f}'''
                 
             )
 
