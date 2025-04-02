@@ -10,6 +10,5 @@ def diversity(top_recommends: dict, embeddings: np.ndarray, similarity_metric: s
         sim = pdist(items_emb, similarity_metric)
         user_diversity = 1 - np.mean(sim)
         diversity += user_diversity
-    
-
+  
     return diversity / len(top_recommends)
