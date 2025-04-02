@@ -18,7 +18,7 @@ do
 
     #python3 main.py test --model=ANR --dataset=$dataset --emb_opt=word2vec --num-fea=1 --id_emb_size=500 --statistical_test=True --ranking_metrics=True
 
-    python3 teste.py test --model=HRDR --dataset=$dataset --emb_opt=word2vec --num-fea=2 --statistical_test=True --ranking_metrics=True
+    python3 main.py test --model=HRDR --dataset=$dataset --emb_opt=word2vec --num-fea=2 --statistical_test=True --ranking_metrics=True
 
     #python3 main.py test --model=TARMF --dataset=$dataset --emb_opt=word2vec --num-fea=2 --statistical_test=True --ranking_metrics=True
 
@@ -28,9 +28,9 @@ do
 
     #python3 main.py test --model=A3NCF --dataset=$dataset --num_fea=1 --topics=True --direct_output=True --emb_opt=word2vec --statistical_test=True --ranking_metrics=True
 
-    python3 teste.py test --model=CARP --dataset=$dataset --output=lfm --emb_opt=word2vec --statistical_test=True  --ranking_metrics=True
+    python3 main.py test --model=CARP --dataset=$dataset --output=lfm --emb_opt=word2vec --statistical_test=True  --ranking_metrics=True
 
-    python3 teste.py test --model=CARM --dataset=$dataset --emb_opt=word2vec --statistical_test=True --ranking_metrics=True
+    python3 main.py test --model=CARM --dataset=$dataset --emb_opt=word2vec --statistical_test=True --ranking_metrics=True
 
-    python3 main.py test --model=MAN --dataset=$dataset --batch_size=16 --man=True --emb_opt=word2vec --output=nfm
+    python3 main.py test --model=MAN --dataset=$dataset --batch_size=64 --man=True --emb_opt=word2vec --output=nfm
 done
