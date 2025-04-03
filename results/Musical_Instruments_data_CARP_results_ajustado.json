@@ -1,0 +1,7 @@
+{
+    "dataset": "Musical_Instruments_data",
+    "model": "CARP",
+    "diversity": 0.14126795823772362,
+    "precision": 0.001207,
+    "recall": 0.012001
+}

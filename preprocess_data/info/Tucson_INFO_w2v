@@ -1,0 +1,50 @@
+SAVE FOLDER： ../dataset/.data/Tucso_data_word2vec
+Warning: the word embedding file is not provided, will be initialized randomly
+2024-05-21 22:51:38: Step1: loading raw review datasets...
+===============Start:all  rawData size======================
+dataNum: 230070
+userNum: 13004
+itemNum: 9069
+data densiy: 0.0020
+===============End: rawData size========================
+------------------------------------------------------------
+2024-05-21 22:51:39 Step2: split datsets into train/val/test, save into npy data
+===============Start: no-preprocess: trainData size======================
+dataNum: 184056
+userNum: 13003
+itemNum: 8939
+===============End: no-preprocess: trainData size========================
+===============Start--process finished: trainData size======================
+dataNum: 184247
+userNum (config): 13004
+itemNum (config): 9069
+===============End-process finished: trainData size========================
+2024-05-21 22:51:40
+Train data size (config): 184247
+Val data size (config): 22912
+Test data size (config): 22911
+------------------------------------------------------------
+2024-05-21 22:51:40 Step3: Construct the vocab and user/item reviews from training set.
+LDA transform matrix: (22073, 32)
+The vocab size: 50002
+Average user document length: 305.85050753614274
+Average item document length: 289.1251516153931
+2024-05-21 22:53:05
+u_max_r:20
+i_max_r:31
+r_max_len：63
+------------------------------------------------------------
+2024-05-21 22:53:05 Step4: padding all the text and id lists and save into npy.
+user document length: 500
+item document length: 500
+------------------------------------------------------------
+2024-05-21 22:53:08 start writing npy...
+2024-05-21 22:53:09 write finised
+------------------------------------------------------------
+2024-05-21 22:53:09 Step5: start word embedding mapping...
+############################
+out of vocab: 13113
+w2v size: 50002
+############################
+Vocab Size and Word Dim: (50002, 300)
+2024-05-21 22:53:21 all steps finised, cost time: 103.3521s
