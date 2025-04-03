@@ -28,7 +28,7 @@ do
 
     #python3 main.py test --model=A3NCF --dataset=$dataset --num_fea=1 --topics=True --direct_output=True --emb_opt=word2vec --statistical_test=True --ranking_metrics=True
 
-    python3 main.py test --model=CARP --dataset=$dataset --output=lfm --emb_opt=word2vec --statistical_test=True  --ranking_metrics=True
+    #python3 main.py test --model=CARP --dataset=$dataset --output=lfm --emb_opt=word2vec --statistical_test=True  --ranking_metrics=True
 
     python3 main.py test --model=CARM --dataset=$dataset --emb_opt=word2vec --statistical_test=True --ranking_metrics=True
 
