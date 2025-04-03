@@ -254,6 +254,22 @@ def test(**kwargs):
     print(f"{now()}: test in the test dataset")
 
     predict_loss, test_mse, test_mae, test_prediction = predict(model, test_data_loader, opt)
+
+    train_data = ReviewData(opt.data_root, mode="Train")
+    val_data = ReviewData(opt.data_root, mode="Validation")
+
+    user_rated_items = defaultdict(set)
+    # Itens avaliados no treino
+    for instance in train_data.x:
+        user = int(instance[0].flatten()[0])
+        item = instance[1]
+        user_rated_items[user].add(item)
+    # Itens avaliados na validação
+    for instance in val_data.x:
+        user = int(instance[0].flatten()[0])
+        item = instance[1]
+        user_rated_items[user].add(item)
+
      # --- Cálculo da Diversidade das Recomendações ---
     path = 'dataset/.data/' + f'{opt.dataset}_{opt.emb_opt}'
     with open(path + '/train/itemDoc2Index.npy', 'rb') as f:
@@ -266,7 +282,8 @@ def test(**kwargs):
     
     #user = list(test_users)[0]
     for user in tqdm(test_users, desc="Processando usuários"):
-        candidate_items = list(range(opt.item_num - 2))
+        rated_items = user_rated_items.get(user, set())
+        candidate_items = list(set(range(opt.item_num - 2)) - rated_items)
         test_user_data = unpack_input(opt, zip([user] * len(candidate_items), candidate_items))
         all_predictions = []
         # Processa os itens em batches de tamanho opt.batch_size
