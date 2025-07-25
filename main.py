@@ -4,6 +4,8 @@ import random
 import math
 import fire
 import os
+import json
+from tqdm import tqdm
 
 import numpy as np
 import pandas as pd
@@ -22,6 +24,8 @@ from utils.utils import *
 from metrics.ndcg import ndcg_metric
 from metrics.novelty import novelty
 from metrics.diversity import diversity
+from caserec.evaluation.rating_prediction import RatingPredictionEvaluation
+from collections import defaultdict
 
 # @TRAIN FUNCTION 
 def train(**kwargs):
@@ -248,8 +252,137 @@ def test(**kwargs):
     test_data = ReviewData(opt.data_root, mode="Test")
     test_data_loader = DataLoader(test_data, batch_size=opt.batch_size, shuffle=False, collate_fn=collate_fn)
     print(f"{now()}: test in the test dataset")
+
     predict_loss, test_mse, test_mae, test_prediction = predict(model, test_data_loader, opt)
 
+    train_data = ReviewData(opt.data_root, mode="Train")
+    val_data = ReviewData(opt.data_root, mode="Validation")
+
+    user_rated_items = defaultdict(set)
+    # Itens avaliados no treino
+    for instance in train_data.x:
+        user = int(instance[0].flatten()[0])
+        item = instance[1]
+        user_rated_items[user].add(item)
+    # Itens avaliados na validação
+    for instance in val_data.x:
+        user = int(instance[0].flatten()[0])
+        item = instance[1]
+        user_rated_items[user].add(item)
+
+     # --- Cálculo da Diversidade das Recomendações ---
+    path = 'dataset/.data/' + f'{opt.dataset}_{opt.emb_opt}'
+    with open(path + '/train/itemDoc2Index.npy', 'rb') as f:
+        embeddings = np.load(f)
+
+    rank_predictions = {}
+    diversity_list = []
+
+    test_users = set([int(x[0].flatten()[0]) for x in test_data.x])
+    
+    #user = list(test_users)[0]
+    for user in tqdm(test_users, desc="Processando usuários"):
+        rated_items = user_rated_items.get(user, set())
+        candidate_items = list(set(range(opt.item_num - 2)) - rated_items)
+        test_user_data = unpack_input(opt, zip([user] * len(candidate_items), candidate_items))
+        all_predictions = []
+        # Processa os itens em batches de tamanho opt.batch_size
+        for i in range(0, len(candidate_items), opt.batch_size):
+            batch_items = candidate_items[i : i + opt.batch_size]
+            test_user_data = unpack_input(opt, zip([user] * len(batch_items), batch_items))
+            
+            if opt.transnet:
+                output, _ = model(test_user_data)
+                output = output[1]
+            else:
+                output = model(test_user_data)
+            
+            batch_predictions = output.cpu().tolist()
+            all_predictions.extend(batch_predictions)
+
+        item_predictions = list(zip(candidate_items, all_predictions))
+        item_predictions = sorted(item_predictions, key=lambda x: x[1], reverse=True)
+
+        top_k = 500  
+        top_k_dict = {item: score for item, score in item_predictions[:top_k]}
+        rank_predictions[user] = top_k_dict
+
+
+    recommendations_file = f"results/{opt.dataset}_{opt.model}_top500_recommendations.json"
+    with open(recommendations_file, "w") as f:
+        json.dump(rank_predictions, f, indent=4)
+    print(f"Top500 recomendações salvas em {recommendations_file}")
+    
+# @EVALUATE
+def evaluate(**kwargs):
+    if 'dataset' not in kwargs:
+        raise Exception("Dataset not provided.")
+    else:
+        opt = getattr(config, kwargs['dataset'] + '_Config')()
+    opt.parse(kwargs)
+    
+    # Se você precisar ajustar o nome do modelo, conforme já feito na função test:
+    if opt.bert == "zeroshot":
+        opt.model = f"{opt.model}_ZeroShot"
+    elif opt.bert == "finetunning":
+        opt.model = f"{opt.model}_FineTunning"
+    
+    # Caminho para o arquivo de recomendações já gerado
+    recommendations_file = f"results/{opt.dataset}_{opt.model}_top10_recommendations.json"
+    with open(recommendations_file, "r") as f:
+         rank_predictions = json.load(f)
+    print(f"Recomendações carregadas de {recommendations_file}")
+
+    # Carrega os embeddings
+    emb_path = f"dataset/.data/{opt.dataset}_{opt.emb_opt}/train/itemDoc2Index.npy"
+    with open(emb_path, "rb") as f:
+         embeddings = np.load(f)
+    print(f"Embeddings carregados de {emb_path}")
+
+    # Cálculo da diversidade
+    avg_diversity = diversity(rank_predictions, embeddings)
+    print(f"Diversidade global: {avg_diversity:.2f}")
+
+    # Reconstrói o ground truth a partir dos dados de teste
+    test_data = ReviewData(opt.data_root, mode="Test")
+    test_users = set([int(x[0].flatten()[0]) for x in test_data.x])
+    inner_ground_truth = {user: {} for user in test_users}
+    for interaction in test_data.x:
+        user = int(interaction[0].flatten()[0])
+        item = int(interaction[0].flatten()[1])
+        rating = float(interaction[1])
+        inner_ground_truth[user][item] = rating
+
+    test_ground_truth = {
+        "feedback": inner_ground_truth,
+        "users": list(inner_ground_truth.keys()),
+        "items": list({item for user in inner_ground_truth for item in inner_ground_truth[user]})
+    }
+    rank_predictions = {
+        int(user): {int(item): score for item, score in recs.items()}
+        for user, recs in rank_predictions.items()
+}
+    
+    rank_evaluator = RatingPredictionEvaluation(sep='\t', n_rank=[10], as_rank=True, metrics=['PREC'])
+    rank_metrics = rank_evaluator.evaluate(rank_predictions, test_ground_truth)
+
+    for metric_name, metric_value in rank_metrics.items():
+        print(f"{metric_name}: {metric_value}")
+
+    print(f"Precision: {rank_metrics.get('PREC@10'):.4f}")
+
+    # Cria o dicionário de resultados e salva em um arquivo JSON
+    result = {
+       "dataset": opt.dataset,
+       "model": opt.model,
+       "diversity": avg_diversity,
+       "precision": rank_metrics.get('PREC@10'),
+       "recall": rank_metrics.get('RECALL@10')
+    }
+    output_file = f"results/{opt.dataset}_{opt.model}_results_ajustado.json"
+    with open(output_file, "w") as f:
+       json.dump(result, f, indent=4)
+    print(f"Resultados salvos em {output_file}")
 
 # @PREDICT OUTPUT FUNCTION
 def predict(model, data_loader, opt):
@@ -292,15 +425,15 @@ def predict(model, data_loader, opt):
 
             rmse, precision, recall = calculate_metrics(scores, output)
             novel = novelty(scores.cpu().tolist(), output.cpu().tolist())
-            diver = diversity(scores.cpu().tolist(), output.cpu().tolist())
+            #diver = diversity(scores.cpu().tolist(), output.cpu().tolist())
 
             mse_values.append(mse_loss.cpu().item())
             rmse_values.append(rmse.item())
             mae_values.append(mae_loss.cpu().item())
-            precision_values.append(precision.item())
-            recall_values.append(recall.item())
+            #precision_values.append(precision.item())
+            #recall_values.append(recall.item())
             novelty_values.append(novel)
-            diversity_values.append(diver)
+            #diversity_values.append(diver)
 
     if opt.ranking_metrics:
         iteractions, scores = next(iter(data_loader))
@@ -362,9 +495,9 @@ def predict(model, data_loader, opt):
             "mse":mse_values, 
             "mae":mae_values,
             "rmse": rmse_values,
-            "precision": precision_values,
-            "recall": recall_values,
-            "diversity": diversity_values,
+            #"precision": precision_values,
+            #"recall": recall_values,
+            #"diversity": diversity_values,
             "novelty": novelty_values,
             }
         
@@ -384,10 +517,10 @@ def predict(model, data_loader, opt):
                 MAE mean: {np.array(mae_values).mean():.2f}, 
                 RMSE mean: {np.array(rmse_values).mean():.2f}, 
                 NDCG mean: {np.array(ndcg_values).mean():.5f}, 
-                PRECISION mean: {np.array(precision_values).mean():.2f},
-                RECALL mean: {np.array(recall_values).mean():.2f},
-                NOVELTY mean: {np.array(novelty_values).mean():.2f},
-                DIVERSITY mean: {np.array(diversity_values).mean():.2f}'''
+                NOVELTY mean: {np.array(novelty_values).mean():.2f}'''
+                #PRECISION mean: {np.array(precision_values).mean():.2f},
+                #RECALL mean: {np.array(recall_values).mean():.2f},
+                #DIVERSITY mean: {np.array(diversity_values).mean():.2f}'''
                 
             )
 

@@ -1,4 +1,4 @@
-for dataset in Tamp_data
+for dataset in Musical_Instruments_data
 do
 
     #python3 main.py train --model=DeepCoNN --dataset=$dataset --emb_opt=word2vec --num-fea=1 
@@ -17,7 +17,7 @@ do
 
     #python3 main.py train --model=ANR --dataset=$dataset --emb_opt=word2vec --num-fea=1 --id_emb_size=500 
 
-    python3 main.py train --model=HRDR --dataset=$dataset --emb_opt=word2vec --num-fea=2 
+    #python3 main.py train --model=HRDR --dataset=$dataset --emb_opt=word2vec --num-fea=2 
 
     #python3 main.py train --model=TARMF --dataset=$dataset --emb_opt=word2vec --num-fea=2 
 
@@ -27,9 +27,9 @@ do
 
     #python3 main.py train --model=A3NCF --dataset=$dataset --num_fea=1 --topics=True --direct_output=True --emb_opt=word2vec 
 
-    python3 main.py train --model=CARP --dataset=$dataset --output=lfm --emb_opt=word2vec 
+    #python3 main.py train --model=CARP --dataset=$dataset --output=lfm --emb_opt=word2vec 
 
-    python3 main.py train --model=CARM --dataset=$dataset --emb_opt=word2vec 
+    #python3 main.py train --model=CARM --dataset=$dataset --emb_opt=word2vec 
 
-    python3 main.py train --model=MAN --dataset=$dataset --batch_size=16 --man=True --emb_opt=word2vec --output=nfm
+    python3 main.py train --model=MAN --dataset=$dataset --batch_size=64 --man=True --emb_opt=word2vec --output=nfm
 done
